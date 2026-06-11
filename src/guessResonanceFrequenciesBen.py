@@ -3,35 +3,7 @@ import scipy.signal as sig
 import matplotlib.pyplot as plt
 plt.ion()
 
-'''
-f0guesses = guessResonanceFrequencies(f,s21,bw,threshold_diamratio,threshold_bwratio,threshold_spacing)
-
-This function takes as inputs a numpy vector of frequency values, f, a complex numpy vector of S21
-values, z, and a user guess at the typical bandwidth of the resonances. It first attempts to remove
-the cable delay from the data. Then it applies a digital filter for a smoothed derivative of S21,
-using the user guess at bandwidth to define a safe cut-off of the smoothing low-pass.
-
-It then applies two thresholds looking at the 3-point circles for half-bandwidth-spaced data points
-to require that the circles be at least a certain fraction of the "off-resonance" transmission and
-that the arc angles be consistent with resonances of at most a maximum bandwidth relative to the
-expected bandwidth.
-
-It finally looks within the "valid" regions for the points of maximum derivative of S21 and picks
-those points as the guess indices, requiring a minimum spacing in bandwidths between resonances.
-These points are returned both as a list of indices and a list of frequencies.
-
-Note that this function should only be used to guess at resonance frequencies. A more complete fit,
-taking into account things like launch effects, should be used for precise resonance frequency
-determination.
-
-Example usage:
-
-import guessResonanceFrequencies as grf
-tau,good,f0good = grf.guessResonanceFrequencies(f,s21,bw,threshold_diamratio=0.2,threshold_bwratio=2,threshold_spacing=3)
-'''
-
 def remove_cable_delay(f,s21,showplot=False):
-
     rawphase = np.unwrap(np.angle(s21))
     
     pf = np.polyfit(f,rawphase,deg=1)
@@ -55,24 +27,7 @@ def remove_cable_delay(f,s21,showplot=False):
 
 def circle_fit(x,y,showplot=False):
     """ Algebraic circle fit by Taubin
-
-    Parameters:
-    ===========
-    x,y        : x- and y-coordinates of points to fit
-
-    Returns:
-    ===========
-    xc,yc      : x- and y-coordinates of best-fit circle center
-    r          : radius of best-fit circle
-
-    Fit algorithm based off:
-        G. Taubin, "Estimation Of Planar Curves, Surfaces And Nonplanar
-                    Space Curves Defined By Implicit Equations, With
-                    Applications To Edge And Range Image Segmentation",
-        IEEE Trans. PAMI, Vol. 13, pages 1115-1138, (1991)
     """
-
-    # Force inputs into column vectors
     npts = len(x)
     x1 = np.mean(x)
     y1 = np.mean(y)
@@ -104,8 +59,7 @@ def circle_fit(x,y,showplot=False):
     return xc,yc,r,sqerr
 
 
-def guess_resonance_frequencies(f,s21,bw_lo,bw_hi,threshold_diam=0.05,threshold_spacing=2.0,threshold_circlefiterr=0.1):
-
+def guess_resonance_frequencies(f,s21,bw_lo,bw_hi,threshold_diam=0.05,threshold_spacing=2.0,threshold_circlefiterr=0.1,interactive=True):
     s21,tau = remove_cable_delay(f,s21,showplot=False)
 
     df = f[1]-f[0]
@@ -127,10 +81,8 @@ def guess_resonance_frequencies(f,s21,bw_lo,bw_hi,threshold_diam=0.05,threshold_
                 # Fit from -BW/2 to +BW/2 to a circle in the complex plane
                 xc,yc,r,sqerr = circle_fit(np.real(s21[n-nhbw:n+1+nhbw]),np.imag(s21[n-nhbw:n+1+nhbw]),showplot=False)
                 if (np.sqrt(sqerr/(2*nhbw - 1))/r > threshold_circlefiterr):
-                    #print("Circle fit poor at index {:d}".format(n))
                     pass
                 elif ((2*r/(r+np.sqrt(xc**2 + yc**2))) < threshold_diam):
-                    #print("Circle too small at index {:d}".format(n))
                     pass
                 else:
                     tht = np.unwrap(np.angle(s21t[n-2*nhbw:n+1+2*nhbw]-(xc+1j*yc)))
@@ -140,7 +92,6 @@ def guess_resonance_frequencies(f,s21,bw_lo,bw_hi,threshold_diam=0.05,threshold_
                         dtht_mid = sig.savgol_filter(tht,window_length=(2*(nhbw//2)+1),polyorder=3,deriv=1)[2*nhbw]
                         d[n,m] = -dtht_mid*2*nhbw
             except RuntimeError:
-                #print("Circle fit failed at index {:d}".format(n))
                 pass
                 
         resind.append(sig.find_peaks(d[:,m],distance=2*nhbw*threshold_spacing)[0])
@@ -160,33 +111,50 @@ def guess_resonance_frequencies(f,s21,bw_lo,bw_hi,threshold_diam=0.05,threshold_
     plt.plot(f,np.abs(s21),'-b')
     plt.plot(f0guesses,np.abs(s21[resind_nodup]),'ob')
 
-    plt.figure(555)
     good = np.zeros(0,dtype=int)
     bad = np.zeros(0,dtype=int)
-    for k in range(len(resind_nodup)):
-        plt.figure(555)
-        plt.clf()
-        tempind = np.arange(resind_nodup[k]-5*nhbw,1+resind_nodup[k]+5*nhbw,1,dtype='int')
-        plt.subplot(1,2,1)
-        plt.plot(np.real(s21[tempind]),np.imag(s21[tempind]),'ob')
-        plt.axis("equal")
-        plt.subplot(1,2,2)
-        plt.plot(tempind,np.abs(s21[tempind]),'-b')
-        plt.draw()
-        plt.figure(444)
-        plt.plot(f[resind_nodup[k]],np.abs(s21[resind_nodup[k]]),'o',color="tab:orange")
-        plt.draw()
-        s = input('[Enter] to accept point, text+[Enter] to reject point: ')
-        if s:
-            bad = np.append(bad,resind_nodup[k])
-            plt.plot(f[resind_nodup[k]],np.abs(s21[resind_nodup[k]]),'or')
-        else:
-            good = np.append(good,resind_nodup[k])
-            plt.plot(f[resind_nodup[k]],np.abs(s21[resind_nodup[k]]),'og')
-        plt.draw()
-    plt.figure(555)
-    plt.close()
-    plt.figure(444)
 
+    if interactive:
+        plt.figure(555)
+        for k in range(len(resind_nodup)):
+            plt.figure(555)
+            plt.clf()
+            tempind = np.arange(resind_nodup[k]-5*nhbw,1+resind_nodup[k]+5*nhbw,1,dtype='int')
+            plt.subplot(1,2,1)
+            plt.plot(np.real(s21[tempind]),np.imag(s21[tempind]),'ob')
+            plt.axis("equal")
+            plt.subplot(1,2,2)
+            plt.plot(tempind,np.abs(s21[tempind]),'-b')
+            plt.draw()
+            plt.figure(444)
+            plt.plot(f[resind_nodup[k]],np.abs(s21[resind_nodup[k]]),'o',color="tab:orange")
+            plt.draw()
+            s = input('[Enter] to accept point, text+[Enter] to reject point: ')
+            if s:
+                bad = np.append(bad,resind_nodup[k])
+                plt.plot(f[resind_nodup[k]],np.abs(s21[resind_nodup[k]]),'or')
+            else:
+                good = np.append(good,resind_nodup[k])
+                plt.plot(f[resind_nodup[k]],np.abs(s21[resind_nodup[k]]),'og')
+            plt.draw()
+        plt.figure(555)
+        plt.close()
+    else:
+        # Non-interactive mode: accept all candidates automatically
+        good = resind_nodup
+
+    plt.figure(444)
     f0good = f[good]
     return tau,good,f0good
+
+
+def guessResonanceFrequencies(f, s21, bw, threshold=0.7):
+    """ Backwards-compatible wrapper function
+    """
+    return guess_resonance_frequencies(
+        f, s21, 
+        bw_lo=bw/2.0, 
+        bw_hi=bw*2.0, 
+        threshold_diam=threshold, 
+        interactive=False
+    )

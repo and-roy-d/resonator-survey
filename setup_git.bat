@@ -5,8 +5,20 @@ echo         Resonator Survey Repository Setup
 echo ========================================================
 echo.
 
+:: Clean up old files from the root directory if they exist
+echo [1/4] Cleaning up old root files...
+del /q ben_find_peaks.py 2>nul
+del /q fitresonance.py 2>nul
+del /q frsurvey.py 2>nul
+del /q guessResonanceFrequenciesBen.py 2>nul
+del /q quickanalysis1.py 2>nul
+del /q widesurvey.py 2>nul
+del /q main.py 2>nul
+del /q widesurvey_aSi80s_20240913.npz 2>nul
+echo Done.
+
 :: Stage all files
-echo [1/3] Staging all files...
+echo [2/4] Staging all files...
 git add .
 if %errorlevel% neq 0 (
     echo Error: Failed to stage files. Is Git installed?
@@ -15,8 +27,8 @@ if %errorlevel% neq 0 (
 )
 
 :: Commit files
-echo [2/3] Committing files...
-git commit -m "Initial commit of resonator-survey project"
+echo [3/4] Committing files...
+git commit -m "Initial commit of resonator-survey project with src/ and data/ structure"
 if %errorlevel% neq 0 (
     echo.
     echo Note: If Git asks for your user.name/user.email, please configure them:
@@ -28,7 +40,7 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
-echo [3/3] Setting branch to main...
+echo [4/4] Setting branch to main...
 git branch -M main
 
 echo.

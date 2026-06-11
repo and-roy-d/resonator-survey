@@ -9,7 +9,7 @@ import qsghw.instruments.alyE5701B_usb as alyE5071B_usb
 # User-defined parameters:
 f_lo = 5.3e9                        # Start frequency of wide survey (Hz).
 f_hi = 6.5e9                        # End frequency of wide survey (Hz).
-filename = "widesurvey_aSi80s_20240913.npz"   # Name of file to save the data.
+filename = "data/widesurvey_aSi80s_20240913.npz"   # Name of file to save the data.
 
 ############################################################################################################
 

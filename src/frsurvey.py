@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import sys
-import guessResonanceFrequencies as grf
+import guessResonanceFrequenciesBen as grf
 import alyE5071B_usb
 import srs_sim900
 import srs_sim928

@@ -2,16 +2,23 @@
 
 A Python project for taking and analyzing wide frequency-swept surveys of superconducting resonators using a Vector Network Analyzer (VNA).
 
-## Repository Overview
+## Directory Structure
 
-This repository contains scripts and modules for measuring and fitting superconducting resonator data:
+The repository has been structured as follows:
 
-*   **`widesurvey.py`**: Controls a VNA to measure wide frequency surveys at different power levels and saves the data.
-*   **`frsurvey.py`**: Performs flux-ramp sweeps of identified resonators using a VNA and battery bias source.
-*   **`quickanalysis1.py`**: Fits the resonance data to a circle in the complex plane to extract the resonance frequency $f_0$, coupling quality factor $Q_c$, and internal quality factor $Q_i$.
-*   **`guessResonanceFrequenciesBen.py`**: Identifies candidate resonance frequencies from transmission data ($S_{21}$).
-*   **`fitresonance.py`**: Implements circle-fitting algorithms (Taubin algebraic fit) and Lorentz/arctan models to fit transmission data.
-*   **`ben_find_peaks.py`**: Utility to identify local maxima in resonance data with minimum peak separation.
+*   **`src/`**: Contains all Python source files (just code):
+    *   `widesurvey.py`: Controls a VNA to measure wide frequency surveys at different power levels.
+    *   `frsurvey.py`: Performs flux-ramp sweeps of identified resonators using a VNA and battery bias source.
+    *   `quickanalysis1.py`: Runs non-interactive resonance analysis, fits data to complex circles, and saves plots.
+    *   `guessResonanceFrequenciesBen.py`: Candidate resonance frequencies search module.
+    *   `fitresonance.py`: Fits transmission data to circle and Lorentz/arctan models.
+    *   `ben_find_peaks.py`: Peak-finding utilities.
+    *   `main.py`: Repository CLI overview script.
+*   **`data/`**: Directory for raw measurement data:
+    *   `widesurvey_aSi80s_20240913.npz`: Example data file (saved to Git).
+*   **`plots/`**: Directory for analysis plots:
+    *   `s21_transmission.png`: Generated plot of $S_{21}$ transmission vs frequency.
+    *   `quality_factors.png`: Generated plot of fit quality factors ($Q_i$).
 
 ---
 
@@ -26,25 +33,40 @@ Ensure you have `uv` installed. If not, install it via:
 ```bash
 # On Windows (PowerShell)
 irm https://astral.sh/uv/install.ps1 | iex
-
-# On macOS/Linux
-curl -FsSL https://astral.sh/uv/install.sh | sh
 ```
 
-### Initializing Environment
+### Running Analysis (and Generating Plots)
 
-To initialize the environment and sync all required dependencies (like `numpy`, `scipy`, and `matplotlib`), run:
+Since your project folder is located inside a cloud-synced folder (like OneDrive or Dropbox), `uv`'s default hardlinking strategy fails. You must specify `--link-mode=copy` to use standard file copying.
 
+To run the analysis:
+
+Double-click or run the helper batch script (which automatically includes the copy flag):
+```cmd
+.\run_analysis.bat
+```
+
+Or run it manually in your terminal:
 ```bash
-uv sync
+# Install dependencies
+uv sync --link-mode=copy
+
+# Run the script
+uv run --link-mode=copy src/quickanalysis1.py
 ```
 
-This will automatically create a `.venv` virtual environment and install the correct package versions.
+---
 
-### Running Scripts
+## Git & GitHub Setup
 
-To run any of the analysis or survey scripts within the configured environment:
+To clean up old files, commit the repository, and push it to GitHub, simply run the helper script:
 
-```bash
-uv run quickanalysis1.py
+```cmd
+.\setup_git.bat
 ```
+
+This script will:
+1. Delete duplicate old files from the root directory.
+2. Stage and commit all files (including the `data/` folder and analysis outputs).
+3. Set the default branch to `main`.
+4. Prompt you to push directly to your GitHub repository.
